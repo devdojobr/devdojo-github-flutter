@@ -57,6 +57,7 @@ class RepositoryContentBlobScreen extends StatelessWidget {
           },
           hasErrorWidget: (err) => const Center(child: const Text("Ocorreu um erro, verifique sua conexão e tente novamente")),
           loadingWidget: () => const Center(child: const CircularProgressIndicator()),
+          hasDataEmptyWidget: () => Container(),
         ),
       ),
     );
