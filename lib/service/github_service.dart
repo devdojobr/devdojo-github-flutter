@@ -26,7 +26,6 @@ abstract class GithubService {
   }
 
   static Future<List<Content>> findFolderByUrl(String url) async {
-    url = GithubService.transformUrl(url);
     var response = await HttpProvider.get(url);
     Iterable iterable = json.decode(response.body);
     List<Content> contents = iterable.map((content) => Content.fromJson(content)).toList();
@@ -34,18 +33,12 @@ abstract class GithubService {
   }
 
   static Future<Content> findFileByUrl(String url) async {
-    url = GithubService.transformUrl(url);
     var response = await HttpProvider.get(url);
     return Content.fromJson(json.decode(response.body));
   }
 
   static Future<User> findUserByUrl(String url) async {
-    url = GithubService.transformUrl(url);
     var response = await HttpProvider.get(url);
     return User.fromJson(json.decode(response.body));
-  }
-
-  static String transformUrl(String url) {
-    return url.replaceAll("https://api.github.com", apiPath);
   }
 }
