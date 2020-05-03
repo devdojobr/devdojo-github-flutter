@@ -25,10 +25,10 @@ class AsyncLayoutConstructor<T> extends StatefulWidget {
 class _AsyncLayoutConstructorState<T> extends State<AsyncLayoutConstructor<T>> {
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
+    return FutureBuilder<T>(
       future: widget.future,
       initialData: widget.initialData,
-      builder: (BuildContext context, AsyncSnapshot snapshot) {
+      builder: (BuildContext context, AsyncSnapshot<T> snapshot) {
         if (snapshot.hasData) {
           return widget.hasDataWidget(snapshot.data);
         }
