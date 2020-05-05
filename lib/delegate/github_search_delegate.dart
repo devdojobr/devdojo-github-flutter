@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:github/http/http_exception.dart';
 import 'package:github/model/repository.dart';
 import 'package:github/screen/repository_tab_screen.dart';
 import 'package:github/service/github_service.dart';
@@ -66,48 +67,65 @@ class RepositoryList extends StatefulWidget {
 
 class _RepositoryListState extends State<RepositoryList> {
   final GlobalKey<ScaffoldState> key = GlobalKey<ScaffoldState>();
-  Future<Pagination<Repository>> future;
-  final List<Widget> widgets = [];
+  final List<Widget> cache = [];
+  Future<List<Widget>> future;
   final maxGitResult = 1000;
   int page = 1;
 
   @override
   void initState() {
-    future = GithubService.findAllRepositoryByName(widget.query, page).then((pagination) {
-      widgets.add(
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: <Widget>[
-              Flexible(child: const Text("Repositórios encontrados")),
-              Text("${pagination.total}"),
-            ],
-          ),
-        ),
-      );
-      widgets.addAll(pagination.items.map((it) => RepositoryView(repository: it)));
-      addLoading(pagination);
-      return pagination;
-    });
+    future = findAllRepositoryByName();
     super.initState();
+  }
+
+  Future<List<Widget>> findAllRepositoryByName() async {
+    try {
+      final Pagination<Repository> pagination = await GithubService.findAllRepositoryByName(widget.query, page);
+      if (cache.isEmpty) {
+        cache.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                Flexible(child: const Text("Repositórios encontrados")),
+                Text("${pagination.total}"),
+              ],
+            ),
+          ),
+        );
+      }
+      if (cache.last is LoadingList) {
+        cache.removeLast();
+      }
+      cache.addAll(pagination.items.map((it) => RepositoryView(repository: it)));
+      if (haveMore(pagination)) {
+        cache.add(LoadingList());
+      }
+      page++;
+      return cache;
+    } on HttpException catch (err) {
+      print(err.body);
+      throw err;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: AsyncLayoutConstructor<Pagination<Repository>>.future(
+      key: key,
+      body: AsyncLayoutConstructor<List<Widget>>.future(
         future: future,
-        hasDataWidget: (data) {
+        hasDataWidget: (List<Widget> data) {
           return ListView.separated(
             padding: const EdgeInsets.symmetric(vertical: 8.0),
-            itemCount: widgets.length,
+            itemCount: data.length,
             addAutomaticKeepAlives: false,
             itemBuilder: (build, index) {
-              if (widgets[index] is LoadingList && haveMore(data)) {
-                findMoreResults();
+              if (data[index] is LoadingList) {
+                future = findAllRepositoryByName().whenComplete(() => setState(() {}));
               }
-              return widgets[index];
+              return data[index];
             },
             separatorBuilder: (BuildContext context, int index) => Divider(),
           );
@@ -119,33 +137,9 @@ class _RepositoryListState extends State<RepositoryList> {
     );
   }
 
-  Future<void> findMoreResults() async {
-    try {
-      page++;
-      final Pagination pagination = await GithubService.findAllRepositoryByName(widget.query, page);
-      widgets.removeLast();
-      widgets.addAll(pagination.items.map((it) => RepositoryView(repository: it)));
-      addLoading(pagination);
-    } catch (err) {
-      key.currentState.showSnackBar(
-        const SnackBar(
-          content: const Text("Ocorreu um erro, verifique sua conexão e tente novamente."),
-        ),
-      );
-      widgets.removeLast();
-    } finally {
-      setState(() {});
-    }
-  }
-
-  void addLoading(Pagination<Repository> pagination) {
-    if (haveMore(pagination)) {
-      widgets.add(LoadingList());
-    }
-  }
-
   bool haveMore(Pagination<Repository> pagination) {
-    if (widgets.length < pagination.total && widgets.length < maxGitResult) {
+    int total = cache.where((it) => it is RepositoryView).length;
+    if (total < pagination.total && total < maxGitResult) {
       return true;
     }
     return false;
@@ -212,6 +206,6 @@ class RepositoryView extends StatelessWidget {
 class LoadingList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Center(child: CircularProgressIndicator());
+    return const Center(child: const CircularProgressIndicator());
   }
 }
