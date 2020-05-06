@@ -66,7 +66,6 @@ class RepositoryList extends StatefulWidget {
 }
 
 class _RepositoryListState extends State<RepositoryList> {
-  final GlobalKey<ScaffoldState> key = GlobalKey<ScaffoldState>();
   final List<Widget> cache = [];
   Future<List<Widget>> future;
   final maxGitResult = 1000;
@@ -113,7 +112,6 @@ class _RepositoryListState extends State<RepositoryList> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: key,
       body: AsyncLayoutConstructor<List<Widget>>.future(
         future: future,
         hasDataWidget: (List<Widget> data) {
