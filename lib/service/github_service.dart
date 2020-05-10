@@ -21,15 +21,13 @@ abstract class GithubService {
   static Future<List<Content>> findAllContentsByFullName(String fullName) async {
     var response = await HttpProvider.get("$apiPath/repos/$fullName/contents");
     Iterable iterable = json.decode(response.body);
-    List<Content> contents = iterable.map((content) => Content.fromJson(content)).toList();
-    return contents;
+    return iterable.map((content) => Content.fromJson(content)).toList();
   }
 
   static Future<List<Content>> findFolderByUrl(String url) async {
     var response = await HttpProvider.get(url);
     Iterable iterable = json.decode(response.body);
-    List<Content> contents = iterable.map((content) => Content.fromJson(content)).toList();
-    return contents;
+    return iterable.map((content) => Content.fromJson(content)).toList();
   }
 
   static Future<Content> findFileByUrl(String url) async {
